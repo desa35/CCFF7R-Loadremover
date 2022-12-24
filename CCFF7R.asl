@@ -116,7 +116,7 @@ split
   //Ending Split on defeating Genesis II -- ALWAYS ACTIVE
   if (current.Chapter == 10 && ((settings["normal"] && current.Enemy1MaxHP == 118999) || (settings["hard"] && current.Enemy1MaxHP == 713994)) && current.Enemy1HP < 1 && !vars.GenesisDefeated)
   {
-    vars.GenesisDefeated = true;
+    vars.GenesisDefeated = true; //flagged to prevent split from triggering multiple times
     return true;
   }
 
@@ -164,6 +164,7 @@ split
   }
 
   //Chapter Splits
+  //Checks if we want to split on transitioning to the next chapter and if we have already done so. Excluding 0 is to prevent errors because "ch0" isn't an option
   if (current.Chapter != 0 && settings["ch" + current.Chapter.ToString()] && !vars.CompletedChapterList.Contains(current.Chapter))
   {
     vars.CompletedChapterList.Add(current.Chapter);
