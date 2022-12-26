@@ -49,13 +49,13 @@ startup
     "Behemoth", "Vajradhara Twins", "Ifrit", "Guard Spider", "Bahamut",
     "G Eraser", "Machine Trio", "G Warrior", "Bahamut Fury", "Genesis I",
     "Angeal Penance", "General's Tank", "Prototype Guard Scorpion", "Sephiroth I", "Sephiroth II",
-    "G Eliminator", "Hollander", "G Regicide", "Genesis Avatar"
+    "G Eliminator", "Hollander", "G Regicide", "Genesis Avatar", "Minerva"
   };
 
   //Boss Split Selection
   settings.Add("bosses", false, "Boss Splits");
     settings.CurrentDefaultParent = "bosses";
-    for (int i = 0; i < 19; i++)
+    for (int i = 0; i < 20; i++)
     {
       settings.Add("boss" + i.ToString(), false, "" + vars.BossNames[i]);
     }
@@ -81,18 +81,18 @@ init
   //Boss HP Lists
   vars.BossHPNormal = new List<uint>()
   {
-     7870,  5075, 12860,   7225, 11740, 
-    11900, 10230,  8290,  16000, 17800,
-    31800, 22860, 52180,  52820, 21520,
-    65300, 78830, 95800, 400000
+     7870,  5075, 12860,   7225,    11740, 
+    11900, 10230,  8290,  16000,    17800,
+    31800, 22860, 52180,  52820,    21520,
+    65300, 78830, 95800, 400000, 10000000
   };
 
   vars.BossHPHard = new List<uint>()
   {
-      7870,   5075,  12860,    7225, 11740,
-     11900,  11253,   9119,   24000, 48060,
-    101760,  89154, 182630,  223956, 93827,
-    305604, 467461, 440680, 2232000
+      7870,   5075,  12860,    7225,    11740,
+     11900,  11253,   9119,   24000,    48060,
+    101760,  89154, 182630,  223956,    93827,
+    305604, 467461, 440680, 2232000, 77777777
   };
 
   //Completed Boss Splits
@@ -123,7 +123,7 @@ split
   //Boss Splits
   if (settings["bosses"])
   {
-    for (int i = 0; i < 19; i++)
+    for (int i = 0; i < 20; i++)
     {
       if (i == 1) //Vajra Twins Split
       {
