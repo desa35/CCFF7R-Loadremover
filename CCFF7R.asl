@@ -78,6 +78,9 @@ init
   //Genesis Defeated Flag
   vars.GenesisDefeated = false;
 
+  //Boss Split Delay Flag -- used to prevent an immediate split when starting a new run if the previous run was reset after an activated boss split because the enemy HP table is not flushed after battles
+  vars.BossDelay = false;
+
   //Boss HP Lists
   vars.BossHPNormal = new List<uint>()
   {
@@ -113,15 +116,21 @@ start
 
 split
 {
+  //Do not activate the boss splits (including Genesis II) until the first enemy battle starts in order to prevent a possible extra split
+  if(current.Enemy1MaxHP == 210)
+  {
+    vars.BossDelay = true;
+  }
+  
   //Ending Split on defeating Genesis II -- ALWAYS ACTIVE
-  if (current.Chapter == 10 && ((settings["normal"] && current.Enemy1MaxHP == 118999) || (settings["hard"] && current.Enemy1MaxHP == 713994)) && current.Enemy1HP < 1 && !vars.GenesisDefeated)
+  if (vars.BossDelay && current.Chapter == 10 && ((settings["normal"] && current.Enemy1MaxHP == 118999) || (settings["hard"] && current.Enemy1MaxHP == 713994)) && current.Enemy1HP < 1 && !vars.GenesisDefeated)
   {
     vars.GenesisDefeated = true; //flagged to prevent split from triggering multiple times
     return true;
   }
 
   //Boss Splits
-  if (settings["bosses"])
+  if (vars.BossDelay && settings["bosses"])
   {
     for (int i = 0; i < 20; i++)
     {
@@ -201,6 +210,7 @@ update
 		vars.CompletedChapterList.Clear();
     vars.CompletedBossList.Clear();
     vars.GenesisDefeated = false;
+    vars.BossDelay = false;
 	}
 
 	//Uncomment debug information in the event of an update.
