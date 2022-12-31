@@ -184,22 +184,25 @@ split
 isLoading
 {
   //Stops the Game Time whenever a Room or Cutscene gets loaded as well as when the game gets exited
-  return current.Loading1 || current.Loading2 || vars.crash || current.IGT <= 540;
+  return current.Loading1 || current.Loading2 || vars.crash;
 }
 
 exit
 {
   //Changes variable to stop Game Time and starts a 60 second timer to give the runner time to restart the run
-  vars.crash = true;
-  vars.timer = 0;
+  if (timer.CurrentPhase == TimerPhase.Running)
+  {
+    vars.crash = true;
+    vars.timer = 0;
+  }
   timer.IsGameTimePaused = true;
 }
 
 update
 {
-  //Starts a 60 second countdown in which the player can resume their game before the timer continues. Timer starts early if IGT above 1 minute is detected
+  //Starts a 60 second countdown for the runner to restart their game before it is considered ideling.
   vars.timer++;
-  if (vars.timer >= 3600 || current.IGT >= 3600)
+  if(vars.timer >= 3600 || current.IGT >= 3600)
   {
     vars.crash = false;
   }
