@@ -202,7 +202,7 @@ update
 {
   //Starts a 60 second countdown for the runner to restart their game before it is considered ideling.
   vars.timer++;
-  if(vars.timer >= 3600 || current.IGT >= 3600)
+  if(vars.timer >= 3600 || current.Loading1)
   {
     vars.crash = false;
   }
