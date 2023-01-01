@@ -201,7 +201,11 @@ exit
 update
 {
   //Starts a 60 second countdown for the runner to restart their game before it is considered ideling.
-  vars.timer++;
+  if(vars.crash)
+  {
+    vars.timer++;
+  }
+  //Timer unpauses when either 60 seconds have passed or the game has been loaded up
   if(vars.timer >= 3600 || current.Loading1)
   {
     vars.crash = false;
