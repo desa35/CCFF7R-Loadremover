@@ -7,11 +7,13 @@ state("CCFF7R-Win64-Shipping")
   uint EXP: 0x71B3F04;                //EXP (Default Value on Title Screen is 489)
   byte Chapter: 0x71B4BA4;            //Gives current chapter number (0 during prologue and some loading screens)
   uint Enemy1HP: 0x7195028;           //First enemy current HP
-  uint Enemy1MaxHP: 0x71A3828;        //First enemy maximum HP
+  uint Enemy1MaxHP: 0x719502C;        //First enemy maximum HP
   uint Enemy2HP: 0x7195768;           //Second enemy current HP
   uint Enemy2MaxHP: 0x71A3F68;        //Second enemy maximum HP
   uint Enemy3HP: 0x7195EA8;           //Third enemy current HP
-  uint Enemy3MaxHP: 0x71A46A8;        //Third enemy maximum HP -- highest needed for boss splits
+  uint Enemy3MaxHP: 0x71A46A8;        //Third enemy maximum HP
+  uint Enemy4HP: 0x71965E8;           //Fourth enemy current HP
+  uint Enemy4MaxHP: 0x71965EC;        //Fourth enemy maximum HP
 }
 
 startup
@@ -63,14 +65,22 @@ startup
 
   //Chapter End Split Selection
   settings.Add("chapters", false, "Split on chapter completion.");
-    settings.SetToolTip("chapters", "Splits right before the end of chapter static image.");
-    settings.CurrentDefaultParent = "chapters";
-    settings.Add("ch1", false, "Prologue");
-    for (int i = 2; i < 11; i++)
-    {
-      settings.Add("ch" + i.ToString(), false, "Chapter " + (i-1).ToString());
-    }
-    settings.CurrentDefaultParent = null;
+  settings.SetToolTip("chapters", "Splits right before the end of chapter static image.");
+  settings.CurrentDefaultParent = "chapters";
+  settings.Add("ch1", false, "Prologue");
+  for (int i = 2; i < 11; i++)
+  {
+    settings.Add("ch" + i.ToString(), false, "Chapter " + (i-1).ToString());
+  }
+  settings.CurrentDefaultParent = null;
+
+  //Misc Splits
+  settings.Add("misc", false, "Misc Splits");
+  settings.CurrentDefaultParent = "misc";
+  settings.Add("misc713", false, "Mission 7-1-3");
+  settings.Add("misc722", false, "Mission 7-2-2");
+  settings.Add("miscwalletworms", false, "Wallet Worms");
+  settings.CurrentDefaultParent = null;
 }
 
 init
@@ -103,6 +113,9 @@ init
 
   //Completed Chapter Splits
   vars.CompletedChapterList = new List<byte>();
+
+  //Completed Misc Splits
+  vars.CompletedMiscList = new List<byte>();
 }
 
 start
@@ -179,6 +192,32 @@ split
     vars.CompletedChapterList.Add(current.Chapter);
     return true;
   }
+
+  //Misc Splits
+  if(vars.BossDelay && settings["misc"])
+  {
+    if(!vars.CompletedMiscList.Contains(0) && settings["misc713"] && 
+        current.Enemy1MaxHP == 1020 && current.Enemy2MaxHP == 1020 && current.Enemy3MaxHP == 1020 && current.Enemy4MaxHP == 4243 &&
+        current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1 && current.Enemy4HP < 1)
+    {
+      vars.CompletedMiscList.Add(0);
+      return true;
+    }
+    if(!vars.CompletedMiscList.Contains(1) && settings["misc722"] &&
+        current.Enemy1MaxHP == 28400 && current.Enemy1HP < 1)
+    {
+      vars.CompletedMiscList.Add(1);
+      return true;
+    }
+    if(!vars.CompletedMiscList.Contains(2) && settings["miscwalletworms"] && 
+        current.Chapter == 4 &&
+        current.Enemy1MaxHP == 3300 && current.Enemy2MaxHP == 3300 && current.Enemy3MaxHP == 3300 &&
+        current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1)
+    {
+      vars.CompletedMiscList.Add(2);
+      return true;
+    }
+  }
 }
 
 isLoading
@@ -216,6 +255,7 @@ update
 	{
 		vars.CompletedChapterList.Clear();
     vars.CompletedBossList.Clear();
+    vars.CompletedMiscList.Clear();
     vars.GenesisDefeated = false;
     vars.BossDelay = false;
 	}
