@@ -6,6 +6,7 @@ state("CCFF7R-Win64-Shipping")
   double IGT: 0x71B3FB8;              //IGT
   uint EXP: 0x71B3F04;                //EXP (Default Value on Title Screen is 489)
   byte Chapter: 0x71B4BA4;            //Gives current chapter number (0 during prologue and some loading screens)
+  uint CursedRing: 0x71B5068;         //Cursed ring chest attempt count, 20 == cursed ring obtained
   uint Enemy1HP: 0x7195028;           //First enemy current HP
   uint Enemy1MaxHP: 0x719502C;        //First enemy maximum HP
   uint Enemy2HP: 0x7195768;           //Second enemy current HP
@@ -77,9 +78,12 @@ startup
   //Misc Splits
   settings.Add("misc", false, "Misc Splits");
   settings.CurrentDefaultParent = "misc";
-  settings.Add("misc713", false, "Mission 7-1-3");
-  settings.Add("misc722", false, "Mission 7-2-2");
-  settings.Add("miscwalletworms", false, "Wallet Worms");
+  settings.Add("misc713", false, "Mission 7-1-3");                      // Combat resolved - boss encounter 7 - 1 - 3
+  settings.Add("misc722", false, "Mission 7-2-2");                      // Combat resolved - boss encounter 7 - 2 - 2
+  settings.Add("miscwalletworms", false, "Wallet Worms");               // Combat resolved - 3 worms for wallet quest
+  settings.Add("miscwutaiinfiltrate", false, "Wutai Camp Infiltration");// combat resolved - first encounter after going through wutai camp gates
+  settings.Add("miscwutaicampcleared", false, "Wutai Camp Cleared");    // combat resolved - after clearning the 3 Foulanders in wutai camp
+  settings.Add("misccursedring", false, "Cursed Ring");                 // upon dialogue after clicking the chest for the cursed ring for the 20th time
   settings.CurrentDefaultParent = null;
 }
 
@@ -215,6 +219,25 @@ split
         current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1)
     {
       vars.CompletedMiscList.Add(2);
+      return true;
+    }
+    if(!vars.CompletedMiscList.Contains(3) && settings["misccursedring"] && current.CursedRing == 20 && current.Chapter == 1)
+    {
+      vars.CompletedMiscList.Add(3);
+      return true;
+    }
+    if(!vars.CompletedMiscList.Contains(4) && settings["miscwutaiinfiltrate"] && current.Chapter == 1 &&
+        (current.Enemy1MaxHP == 575 && current.Enemy2MaxHP == 178 && current.Enemy3MaxHP == 178 && current.Enemy4MaxHP == 0) &&
+        (current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1))
+    {
+      vars.CompletedMiscList.Add(4);
+      return true;
+    }
+    if(!vars.CompletedMiscList.Contains(5) && settings["miscwutaicampcleared"] && current.Chapter == 1 &&
+        (current.Enemy1MaxHP == 482 && current.Enemy2MaxHP == 482 && current.Enemy3MaxHP == 482) &&
+        (current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1))
+    {
+      vars.CompletedMiscList.Add(5);
       return true;
     }
   }
