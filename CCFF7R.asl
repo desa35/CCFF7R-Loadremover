@@ -2,20 +2,19 @@ state("CCFF7R-Win64-Shipping")
 {
   bool Loading1: 0x73D0988;           //1 during Room Transition, 0 when Room is loaded
   bool Loading2: 0x04D8D5F0, 0x7D;    //1 when cutscene is loaded
-  byte SaveMenu: 0x5179F30;           //1 when Save Icon shown, only for Save / Load Menu
-  double IGT: 0x71B3FB8;              //IGT
-  uint EXP: 0x71B3F04;                //EXP (Default Value on Title Screen is 489)
   byte Chapter: 0x71B4BA4;            //Gives current chapter number (0 during prologue and some loading screens)
-  uint CursedRing: 0x71B5068;         //Cursed ring chest attempt count, 20 == cursed ring obtained
-  uint Enemy1HP: 0x7195028;           //First enemy current HP
-  uint Enemy1MaxHP: 0x719502C;        //First enemy maximum HP
-  uint Enemy2HP: 0x7195768;           //Second enemy current HP
-  uint Enemy2MaxHP: 0x71A3F68;        //Second enemy maximum HP
-  uint Enemy3HP: 0x7195EA8;           //Third enemy current HP
-  uint Enemy3MaxHP: 0x71A46A8;        //Third enemy maximum HP
-  uint Enemy4HP: 0x71965E8;           //Fourth enemy current HP
-  uint Enemy4MaxHP: 0x71965EC;        //Fourth enemy maximum HP
+  uint BattleState: 0x717AD5C;        //Battle state incrementing from 0-7
+  uint LevelId: 0x717A5AC;            //Sometimes 0
+  uint CursedRing: 0x71B5068;         //Cursed ring chest attempts
+
+  uint ZackHP: 0x718DC28;             //Zacks current HP
+
+  uint EnemyId1: 0x7194F38;           //Add 0x0740 to get next enemy id
+  uint EnemyId2: 0x7195678;
+  uint EnemyId3: 0x7195DB8;
+  uint EnemyId4: 0x71964F8;
 }
+
 
 startup
 {
@@ -35,254 +34,161 @@ startup
       timer.CurrentTimingMethod = TimingMethod.GameTime;
     }
   }
-  //Initiates variables in case the game crashes or gets closed
-  vars.crash = false;
-  vars.timer = 0;
 
-  //Autosplitter Settings
-  //-------------------------------------------
-  //Difficulty Selection
-  settings.Add("difficulty", true, "Select difficulty:");
-    settings.Add("normal", true, "Normal", "difficulty");
-    settings.Add("hard", false, "Hard", "difficulty");
-  
-  //Boss List -- Boss indexes 1 (Vajra twins) and 6 (Machine trio) require exception splits due to multiple enemies needing to be killed
-  vars.BossNames = new List<String>()
-  {
-    "Behemoth", "Vajradhara Twins", "Ifrit", "Guard Spider", "Bahamut",
-    "G Eraser", "Machine Trio", "G Warrior", "Bahamut Fury", "Genesis I",
-    "Angeal Penance", "General's Tank", "Prototype Guard Scorpion", "Sephiroth I", "Sephiroth II",
-    "G Eliminator", "Hollander", "G Regicide", "Genesis Avatar", "Minerva"
-  };
+  vars.Location = 0;                      // Var to ignore 0's
+  vars.Chapter = 0;                       // Var to ignore 0's
+  vars.DecendedMtn = false;               // Required for ascend mt nibel split
+  vars.Repeatables = new List<string>();  // Splits that can be repeated will be added and checked here
 
-  //Boss Split Selection
-  settings.Add("bosses", false, "Boss Splits");
-    settings.CurrentDefaultParent = "bosses";
-    for (int i = 0; i < 20; i++)
-    {
-      settings.Add("boss" + i.ToString(), false, "" + vars.BossNames[i]);
-    }
-    settings.CurrentDefaultParent = null;
+  //// Settings
+  // Bosses
+  settings.Add("bosses", false, "Bosses");
+  settings.CurrentDefaultParent = "bosses";
+  settings.Add("e13", false, "Behemoth");
+  settings.Add("e90,93", false, "Vajradhara Twins");
+  settings.Add("e196", false, "Ifrit");
+  settings.Add("e25", false, "Guard Spider");
+  settings.Add("e9", false, "Bahamut");
+  settings.Add("e107", false, "G Eraser");
+  settings.Add("e57,61,64", false, "Machine Trio");
+  settings.Add("e115", false, "G Warrior");
+  settings.Add("e10", false, "Bahamut Fury");
+  settings.Add("e137", false, "Genesis I");
+  settings.Add("e149", false, "A-Griffon");
+  settings.Add("e204", false, "Angeal Penance");
+  settings.Add("e336", false, "General's Tank");
+  settings.Add("e278", false, "Prototype Guard Scorpion");
+  settings.Add("e295", false, "Sephiroth I");
+  settings.Add("e296", false, "Sephiroth II");
+  settings.Add("e122", false, "G Eliminator");
+  settings.Add("e183", false, "Hollander");
+  settings.Add("e124", false, "G Regicide");
+  settings.Add("e206", false, "Genesis Avatar");
+  settings.Add("e139", false, "Genesis II");
+  settings.CurrentDefaultParent = null;
 
-  //Chapter End Split Selection
-  settings.Add("chapters", false, "Split on chapter completion.");
-  settings.SetToolTip("chapters", "Splits right before the end of chapter static image.");
+  // Chapters
+  settings.Add("chapters", false, "Chapters");
   settings.CurrentDefaultParent = "chapters";
-  settings.Add("ch1", false, "Prologue");
+  settings.Add("c1", false, "Prologue");
   for (int i = 2; i < 11; i++)
   {
-    settings.Add("ch" + i.ToString(), false, "Chapter " + (i-1).ToString());
+    settings.Add("c" + i.ToString(), false, "Chapter " + (i-1).ToString());
   }
   settings.CurrentDefaultParent = null;
 
-  //Misc Splits
-  settings.Add("misc", false, "Misc Splits");
+  // Misc
+  settings.Add("misc", false, "Misc");
   settings.CurrentDefaultParent = "misc";
-  settings.Add("misc713", false, "Mission 7-1-3");                      // Combat resolved - boss encounter 7 - 1 - 3
-  settings.Add("misc722", false, "Mission 7-2-2");                      // Combat resolved - boss encounter 7 - 2 - 2
-  settings.Add("miscwalletworms", false, "Wallet Worms");               // Combat resolved - 3 worms for wallet quest
-  settings.Add("miscwutaiinfiltrate", false, "Wutai Camp Infiltration");// combat resolved - first encounter after going through wutai camp gates
-  settings.Add("miscwutaicampcleared", false, "Wutai Camp Cleared");    // combat resolved - after clearning the 3 Foulanders in wutai camp
-  settings.Add("misccursedring", false, "Cursed Ring");                 // upon dialogue after clicking the chest for the cursed ring for the 20th time
+  settings.Add("cursedring", false, "Cursed Ring");
+  settings.Add("l90", false, "Enter Fort Wutai");
+  settings.Add("e92,92,92", false, "Clear Fort Wutai");
+  settings.Add("e178,178", false, "Mission 7-1-1");
+  settings.Add("e257,257,52", false, "Mission 7-1-2");
+  settings.Add("e257,257,257,179", false, "Mission 7-1-3");
+  settings.Add("e52,107", false, "Mission 7-2-1");
+  settings.Add("e283", false, "Mission 7-2-2");
+  settings.Add("e286,286,286", false, "Wallet Worms");
+  settings.Add("l61,56", false, "Mt. Nibel Descent");
+  settings.Add("l65", false, "Shinra Manor Safe");
+  settings.Add("l62,60", false, "Mt. Nibel Ascent");
+  settings.Add("l67", false, "Save Cloud");
+  settings.Add("e111,119", false, "Gongaga Hilltop");
   settings.CurrentDefaultParent = null;
 }
 
-init
+update 
 {
-  //Genesis Defeated Flag
-  vars.GenesisDefeated = false;
-
-  //Boss Split Delay Flag -- used to prevent an immediate split when starting a new run if the previous run was reset after an activated boss split because the enemy HP table is not flushed after battles
-  vars.BossDelay = false;
-
-  //Boss HP Lists
-  vars.BossHPNormal = new List<uint>()
-  {
-     7870,  5075, 12860,   7225,    11740, 
-    11900, 10230,  8290,  16000,    17800,
-    31800, 22860, 52180,  52820,    21520,
-    65300, 78830, 95800, 400000, 10000000
-  };
-
-  vars.BossHPHard = new List<uint>()
-  {
-      7870,   5075,  12860,    7225,    11740,
-     11900,  11253,   9119,   24000,    48060,
-    101760,  89154, 182630,  223956,    93827,
-    305604, 467461, 440680, 2232000, 77777777
-  };
-
-  //Completed Boss Splits
-  vars.CompletedBossList = new List<uint>();
-
-  //Completed Chapter Splits
-  vars.CompletedChapterList = new List<byte>();
-
-  //Completed Misc Splits
-  vars.CompletedMiscList = new List<byte>();
-}
-
-start
-{
-  //Starts the timer automatically once the innitial Saving process has finished. Also checks for EXP to be the default value or over an expected threshold (NG+ only)
-  if (current.EXP == 489 || current.EXP > 75000)
-  {
-    return current.Loading1;
-  }
-}
-
-split
-{
-  //Do not activate the boss splits (including Genesis II) until the first enemy battle starts in order to prevent a possible extra split
-  if(current.Enemy1MaxHP == 210)
-  {
-    vars.BossDelay = true;
-  }
-  
-  //Ending Split on defeating Genesis II -- ALWAYS ACTIVE
-  if (vars.BossDelay && current.Chapter == 10 && ((settings["normal"] && current.Enemy1MaxHP == 118999) || (settings["hard"] && current.Enemy1MaxHP == 713994)) && current.Enemy1HP < 1 && !vars.GenesisDefeated)
-  {
-    vars.GenesisDefeated = true; //flagged to prevent split from triggering multiple times
-    return true;
-  }
-
-  //Boss Splits
-  if (vars.BossDelay && settings["bosses"])
-  {
-    for (int i = 0; i < 20; i++)
-    {
-      if (i == 1) //Vajra Twins Split
-      {
-        if (!vars.CompletedBossList.Contains(current.Enemy1MaxHP) && //Check if this HP value is used already
-            settings["boss" + i.ToString()] && current.Chapter == 1 && //Check if we want to split on this boss index and if we're in the right chapter
-            current.Enemy1MaxHP == 5075 && current.Enemy2MaxHP == 5075 && //Check that both twins are present
-            current.Enemy1HP < 1 && current.Enemy2HP < 1 //Check if the boss is defeated
-           )
-        {
-          vars.CompletedBossList.Add(current.Enemy1MaxHP);
-          return true;
-        }
-      }
-      else if (i == 6) //Machine Trio Split
-      {
-        if (!vars.CompletedBossList.Contains(current.Enemy1MaxHP) && //Check if this HP value is used already
-            settings["boss" + i.ToString()] && current.Chapter == 3 && //Check if we want to split on this boss index and if we're in the right chapter
-            ((settings["normal"] && current.Enemy1MaxHP == 10230 && current.Enemy2MaxHP == 9800 && current.Enemy3MaxHP == 8780) ||
-            (settings["hard"] && current.Enemy1MaxHP == 11253 && current.Enemy2MaxHP == 10780 && current.Enemy3MaxHP == 9658)) && //Check that all three machines are present. HP differs by difficulty
-            current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1 //Check if the boss is defeated
-           )
-        {
-          vars.CompletedBossList.Add(current.Enemy1MaxHP);
-          return true;
-        }
-      }
-      else if (current.Enemy1MaxHP != 5075 && current.Enemy1MaxHP != 10230 && current.Enemy1MaxHP != 11253 && //Check that we're not in one of the exceptional splits
-               !vars.CompletedBossList.Contains(current.Enemy1MaxHP) && //Check if this HP value is used already
-               settings["boss" + i.ToString()] && //Check if we want to split on this boss index
-               ((settings["normal"] && vars.BossHPNormal.Contains(current.Enemy1MaxHP)) || (settings["hard"] && vars.BossHPHard.Contains(current.Enemy1MaxHP))) && //Check if this HP values matches a boss HP
-               current.Enemy1HP < 1 //Check if the boss is defeated
-              )
-      {
-        vars.CompletedBossList.Add(current.Enemy1MaxHP);
-        return true;
-      }
-    }
-  }
-
-  //Chapter Splits
-  //Checks if we want to split on transitioning to the next chapter and if we have already done so. Excluding 0 is to prevent errors because "ch0" isn't an option
-  if (current.Chapter != 0 && settings["ch" + current.Chapter.ToString()] && !vars.CompletedChapterList.Contains(current.Chapter))
-  {
-    vars.CompletedChapterList.Add(current.Chapter);
-    return true;
-  }
-
-  //Misc Splits
-  if(vars.BossDelay && settings["misc"])
-  {
-    if(!vars.CompletedMiscList.Contains(0) && settings["misc713"] && 
-        current.Enemy1MaxHP == 1020 && current.Enemy2MaxHP == 1020 && current.Enemy3MaxHP == 1020 && current.Enemy4MaxHP == 4243 &&
-        current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1 && current.Enemy4HP < 1)
-    {
-      vars.CompletedMiscList.Add(0);
-      return true;
-    }
-    if(!vars.CompletedMiscList.Contains(1) && settings["misc722"] &&
-        current.Enemy1MaxHP == 28400 && current.Enemy1HP < 1)
-    {
-      vars.CompletedMiscList.Add(1);
-      return true;
-    }
-    if(!vars.CompletedMiscList.Contains(2) && settings["miscwalletworms"] && 
-        current.Chapter == 4 &&
-        current.Enemy1MaxHP == 3300 && current.Enemy2MaxHP == 3300 && current.Enemy3MaxHP == 3300 &&
-        current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1)
-    {
-      vars.CompletedMiscList.Add(2);
-      return true;
-    }
-    if(!vars.CompletedMiscList.Contains(3) && settings["misccursedring"] && current.CursedRing == 20 && current.Chapter == 1)
-    {
-      vars.CompletedMiscList.Add(3);
-      return true;
-    }
-    if(!vars.CompletedMiscList.Contains(4) && settings["miscwutaiinfiltrate"] && current.Chapter == 1 &&
-        (current.Enemy1MaxHP == 575 && current.Enemy2MaxHP == 178 && current.Enemy3MaxHP == 178 && current.Enemy4MaxHP == 0) &&
-        (current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1))
-    {
-      vars.CompletedMiscList.Add(4);
-      return true;
-    }
-    if(!vars.CompletedMiscList.Contains(5) && settings["miscwutaicampcleared"] && current.Chapter == 1 &&
-        (current.Enemy1MaxHP == 482 && current.Enemy2MaxHP == 482 && current.Enemy3MaxHP == 482) &&
-        (current.Enemy1HP < 1 && current.Enemy2HP < 1 && current.Enemy3HP < 1))
-    {
-      vars.CompletedMiscList.Add(5);
-      return true;
-    }
-  }
-}
-
-isLoading
-{
-  //Stops the Game Time whenever a Room or Cutscene gets loaded as well as when the game gets exited
-  return current.Loading1 || current.Loading2 || vars.crash;
-}
-
-exit
-{
-  //Changes variable to stop Game Time and starts a 60 second timer to give the runner time to restart the run
-  if (timer.CurrentPhase == TimerPhase.Running)
-  {
-    vars.crash = true;
-    vars.timer = 0;
-  }
-  timer.IsGameTimePaused = true;
-}
-
-update
-{
-  //Starts a 60 second countdown for the runner to restart their game before it is considered ideling.
-  if(vars.crash)
-  {
-    vars.timer++;
-  }
-  //Timer unpauses when either 60 seconds have passed or the game has been loaded up
-  if(vars.timer >= 3600 || current.Loading1)
-  {
-    vars.crash = false;
-  }
-
-  //Reset variables when the timer is reset.
-	if(timer.CurrentPhase == TimerPhase.NotRunning)
-	{
-		vars.CompletedChapterList.Clear();
-    vars.CompletedBossList.Clear();
-    vars.CompletedMiscList.Clear();
-    vars.GenesisDefeated = false;
-    vars.BossDelay = false;
+  // Reset vars on reset
+  if(timer.CurrentPhase == TimerPhase.NotRunning){
+    vars.Location = 0;
+    vars.Chapter = 0;
+    vars.DecendedMtn = false;
+    vars.Repeatables.Clear();
 	}
-
-	//Uncomment debug information in the event of an update.
-	//print(modules.First().ModuleMemorySize.ToString());
 }
+
+split 
+{
+  // Encounter splits
+  if(current.ZackHP > 0 && current.BattleState == 6 && old.BattleState != 6){
+    if(settings["e13"] && current.EnemyId1 == 13) { return true; }
+    if(settings["e92,92,92"] && current.EnemyId1 == 92 && current.EnemyId2 == 92 && current.EnemyId3 == 92) { return true; }
+    if(settings["e90,93"] && current.EnemyId1 == 90 && current.EnemyId2 == 93) { return true; }
+    if(settings["e196"] && current.EnemyId1 == 196) { return true; }
+    if(settings["e25"] && current.EnemyId1 == 25) { return true; }
+    if(settings["e9"] && current.EnemyId1 == 9) { return true; }
+    if(settings["e178,178"] && current.EnemyId1 == 178 && current.EnemyId2 == 178) { return true; }
+    if(settings["e257,257,52"] && current.EnemyId1 == 257 && current.EnemyId2 == 257 && current.EnemyId3 == 52) { return true; }
+    if(settings["e257,257,257,179"] && current.EnemyId1 == 257 && current.EnemyId2 == 257 && current.EnemyId3 == 257 && current.EnemyId4 == 179) { return true; }
+    if(settings["e107"] && current.EnemyId1 == 107) { return true; }
+    if(settings["e57,61,64"] && current.EnemyId1 == 57 && current.EnemyId2 == 61 && current.EnemyId3 == 64) { return true; }
+    if(settings["e52,107"] && current.EnemyId1 == 52 && current.EnemyId2 == 107) { return true; }
+    if(settings["e283"] && current.EnemyId1 == 283) { return true; }
+    if(settings["e286,286,286"] && current.EnemyId1 == 286 && current.EnemyId2 == 286 && current.EnemyId3 == 286) { return true; }
+    if(settings["e115"] && current.EnemyId1 == 115) { return true; }
+    if(settings["e10"] && current.EnemyId1 == 10) { return true; }
+    if(settings["e137"] && current.EnemyId1 == 137) { return true; }
+    if(settings["e149"] && current.EnemyId1 == 149) { return true; }
+    if(settings["e204"] && current.EnemyId1 == 204) { return true; }
+    if(settings["e336"] && current.EnemyId1 == 336) { return true; }
+    if(settings["e278"] && current.EnemyId1 == 278) { return true; }
+    if(settings["e295"] && current.EnemyId1 == 295) { return true; }
+    if(settings["e296"] && current.EnemyId1 == 296) { return true; }
+    if(settings["e122"] && current.EnemyId1 == 122) { return true; }
+    if(settings["e111,119"] && current.EnemyId1 == 111 && current.EnemyId2 == 119) { return true; }
+    if(settings["e183"] && current.EnemyId1 == 183) { return true; }
+    if(settings["e124"] && current.EnemyId1 == 124) { return true; }
+    if(settings["e206"] && current.EnemyId1 == 206) { return true; }
+    if(settings["e139"] && current.EnemyId1 == 139) { return true; }
+  }
+
+  // Location splits
+  if(settings["l90"] && !vars.Repeatables.Contains("l90") && current.LevelId == 90) {
+    vars.Repeatables.Add("l90");
+    return true; 
+  }
+  if(settings["l61,56"] && !vars.Repeatables.Contains("l61,56") && current.LevelId == 56 && vars.Location == 61) {
+    vars.Repeatables.Add("l61,56");
+    return true;
+  }
+  if(settings["l65"] && !vars.Repeatables.Contains("l65") && current.LevelId == 65) {
+    vars.Repeatables.Add("l65");
+    return true; 
+  }
+  if(settings["l62,60"] && vars.DecendedMtn == true && !vars.Repeatables.Contains("l62,60") && current.LevelId == 60) {
+    vars.Repeatables.Add("l62,60");
+    return true; 
+  }
+  if(settings["l67"] && !vars.Repeatables.Contains("l67") && current.LevelId == 67) {
+    vars.Repeatables.Add("l67");
+    return true; 
+  }
+
+
+  // Chapter splits
+  if(current.Chapter > vars.Chapter && settings["c"+current.Chapter.ToString()]){
+    vars.Chapter = current.Chapter;
+    return true;
+  }
+
+
+  // Unique splits
+  if(settings["cursedring"] && current.CursedRing == 20 && old.CursedRing == 19){ return true; }
+
+
+  // Cutscenes push us from 62->60 so we need to have descended Mt Nibel before allowing the split
+  if(current.LevelId == 56 && vars.Location == 61){
+    print("Decent complete!!!");
+    vars.DecendedMtn = true;
+  }
+
+  // LevelId switches between 0 and the level, ignore 0's
+  if(current.LevelId != 0 && current.LevelId != vars.Location) {
+    print("Location: " + current.LevelId.ToString());
+    vars.Location = current.LevelId;
+  }
+}
+
+start { return current.LevelId == 21; }
+isLoading { return current.Loading1 || current.Loading2; }
