@@ -179,13 +179,11 @@ split
 
   // Cutscenes push us from 62->60 so we need to have descended Mt Nibel before allowing the split
   if(current.LevelId == 56 && vars.Location == 61){
-    print("Decent complete!!!");
     vars.DecendedMtn = true;
   }
 
   // LevelId switches between 0 and the level, ignore 0's
   if(current.LevelId != 0 && current.LevelId != vars.Location) {
-    print("Location: " + current.LevelId.ToString());
     vars.Location = current.LevelId;
   }
 }
