@@ -45,9 +45,9 @@ startup
   settings.Add("bosses", false, "Bosses");
   settings.CurrentDefaultParent = "bosses";
   settings.Add("e13", false, "Behemoth");
-  settings.Add("e90,93", false, "Vajradhara Twins");
+  settings.Add("e346,349", false, "Vajradhara Twins");
   settings.Add("e196", false, "Ifrit");
-  settings.Add("e25", false, "Guard Spider");
+  settings.Add("e281", false, "Guard Spider");
   settings.Add("e9", false, "Bahamut");
   settings.Add("e107", false, "G Eraser");
   settings.Add("e57,61,64", false, "Machine Trio");
@@ -114,9 +114,9 @@ split
   if(current.ZackHP > 0 && current.BattleState == 6 && old.BattleState != 6){
     if(settings["e13"] && current.EnemyId1 == 13) { return true; }
     if(settings["e92,92,92"] && current.EnemyId1 == 92 && current.EnemyId2 == 92 && current.EnemyId3 == 92) { return true; }
-    if(settings["e90,93"] && current.EnemyId1 == 90 && current.EnemyId2 == 93) { return true; }
+    if(settings["e346,349"] && current.EnemyId1 == 346 && current.EnemyId2 == 349) { return true; }
     if(settings["e196"] && current.EnemyId1 == 196) { return true; }
-    if(settings["e25"] && current.EnemyId1 == 25) { return true; }
+    if(settings["e281"] && current.EnemyId1 == 281) { return true; }
     if(settings["e9"] && current.EnemyId1 == 9) { return true; }
     if(settings["e178,178"] && current.EnemyId1 == 178 && current.EnemyId2 == 178) { return true; }
     if(settings["e257,257,52"] && current.EnemyId1 == 257 && current.EnemyId2 == 257 && current.EnemyId3 == 52) { return true; }
