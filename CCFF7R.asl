@@ -4,6 +4,8 @@ state("CCFF7R-Win64-Shipping")
   bool Loading2: 0x04D8D5F0, 0x7D;    //1 when cutscene is loaded
   byte Chapter: 0x71B4BA4;            //Gives current chapter number (0 during prologue and some loading screens)
   uint BattleState: 0x717AD5C;        //Battle state incrementing from 0-7
+  uint MenuState: 0x73A0BD0;          //Menu state 54 when in confirm new game window
+  uint PauseState: 0x73F2734;         //Pause menu state, 3 when in pause menu, 2 otherwise
   uint LevelId: 0x717A5AC;            //Sometimes 0
   uint CursedRing: 0x71B5068;         //Cursed ring chest attempts
 
@@ -13,6 +15,8 @@ state("CCFF7R-Win64-Shipping")
   uint EnemyId2: 0x7195678;
   uint EnemyId3: 0x7195DB8;
   uint EnemyId4: 0x71964F8;
+
+  uint EnemyHP1: 0x7195028;           //Used for time end on last hit of Genesis 2
 }
 
 
@@ -39,6 +43,8 @@ startup
   vars.Chapter = 0;                       // Var to ignore 0's
   vars.DecendedMtn = false;               // Required for ascend mt nibel split
   vars.Repeatables = new List<string>();  // Splits that can be repeated will be added and checked here
+  vars.crash = false;                     // True when the game is closed, false when it is opened and loading
+  vars.timer = 0;                         // Timer for the game to be closed before the timer resumes (3600ms)
 
   //// Settings
   // Bosses
@@ -94,13 +100,17 @@ startup
   settings.Add("l62,60", false, "Mt. Nibel Ascent");
   settings.Add("l67", false, "Save Cloud");
   settings.Add("e111,119", false, "Gongaga Hilltop");
+  settings.Add("e220", false, "Minerva");
   settings.CurrentDefaultParent = null;
 }
 
 update 
 {
+  if(vars.crash) { vars.timer++; }                                    // Increment timer if game is closed          
+  if(vars.timer >= 3600 || current.Loading1) { vars.crash = false; }  // 60 seconds timer or loading screen resets crash
+
   // Reset vars on reset
-  if(timer.CurrentPhase == TimerPhase.NotRunning){
+  if(timer.CurrentPhase == TimerPhase.NotRunning) {
     vars.Location = 0;
     vars.Chapter = 0;
     vars.DecendedMtn = false;
@@ -110,8 +120,11 @@ update
 
 split 
 {
+  // Genesis 2 split on 0HP
+  if(settings["e139"] && current.BattleState > 2 && current.EnemyId1 == 139 && current.EnemyHP1 < 1) { return true; }
+
   // Encounter splits
-  if(current.ZackHP > 0 && current.BattleState == 6 && old.BattleState != 6){
+  if(current.ZackHP > 0 && current.BattleState == 6 && old.BattleState != 6) {
     if(settings["e13"] && current.EnemyId1 == 13) { return true; }
     if(settings["e92,92,92"] && current.EnemyId1 == 92 && current.EnemyId2 == 92 && current.EnemyId3 == 92) { return true; }
     if(settings["e346,349"] && current.EnemyId1 == 346 && current.EnemyId2 == 349) { return true; }
@@ -140,7 +153,7 @@ split
     if(settings["e183"] && current.EnemyId1 == 183) { return true; }
     if(settings["e124"] && current.EnemyId1 == 124) { return true; }
     if(settings["e206"] && current.EnemyId1 == 206) { return true; }
-    if(settings["e139"] && current.EnemyId1 == 139) { return true; }
+    if(settings["e220"] && current.EnemyId1 == 220) { return true; }
   }
 
   // Location splits
@@ -167,18 +180,18 @@ split
 
 
   // Chapter splits
-  if(current.Chapter > vars.Chapter && settings["c"+current.Chapter.ToString()]){
+  if(current.Chapter > vars.Chapter && settings["c"+current.Chapter.ToString()]) {
     vars.Chapter = current.Chapter;
     return true;
   }
 
 
   // Unique splits
-  if(settings["cursedring"] && current.CursedRing == 20 && old.CursedRing == 19){ return true; }
+  if(settings["cursedring"] && current.CursedRing == 20 && old.CursedRing == 19) { return true; }
 
 
   // Cutscenes push us from 62->60 so we need to have descended Mt Nibel before allowing the split
-  if(current.LevelId == 56 && vars.Location == 61){
+  if(current.LevelId == 56 && vars.Location == 61) {
     vars.DecendedMtn = true;
   }
 
@@ -188,5 +201,17 @@ split
   }
 }
 
+exit
+{
+  //Changes variable to stop Game Time and starts a 60 second timer to give the runner time to restart the run
+  if (timer.CurrentPhase == TimerPhase.Running) {
+    vars.crash = true;
+    vars.timer = 0;
+  }
+
+  timer.IsGameTimePaused = true;
+}
+
 start { return current.LevelId == 21; }
-isLoading { return current.Loading1 || current.Loading2; }
+reset { return current.MenuState == 54 && current.PauseState == 2 }
+isLoading { return current.Loading1 || current.Loading2 || vars.crash; }
