@@ -106,6 +106,7 @@ startup
 
 update 
 {
+  print("Hello?");
   if(vars.crash) { vars.timer++; }                                    // Increment timer if game is closed          
   if(vars.timer >= 3600 || current.Loading1) { vars.crash = false; }  // 60 seconds timer or loading screen resets crash
 
@@ -213,5 +214,11 @@ exit
 }
 
 start { return current.LevelId == 21; }
-reset { return current.MenuState == 54 && current.PauseState == 2 }
+reset {
+  if(current.MenuState == 54 && current.PauseState == 2) {
+    vars.crash = false;
+    vars.timer = 0;
+    return true;
+  }
+}
 isLoading { return current.Loading1 || current.Loading2 || vars.crash; }
