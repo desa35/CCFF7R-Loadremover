@@ -4,8 +4,6 @@ state("CCFF7R-Win64-Shipping")
   bool Loading2: 0x04D8D5F0, 0x7D;    //1 when cutscene is loaded
   byte Chapter: 0x71B4BA4;            //Gives current chapter number (0 during prologue and some loading screens)
   uint BattleState: 0x717AD5C;        //Battle state incrementing from 0-7
-  uint MenuState: 0x73A0BD0;          //Menu state 54 when in confirm new game window
-  uint PauseState: 0x73F2734;         //Pause menu state, 3 when in pause menu, 2 otherwise
   uint LevelId: 0x717A5AC;            //Sometimes 0
   uint CursedRing: 0x71B5068;         //Cursed ring chest attempts
 
@@ -213,11 +211,4 @@ exit
 }
 
 start { return current.LevelId == 21; }
-// reset {
-//   if(current.MenuState == 54 && current.PauseState == 2) {
-//     vars.crash = false;
-//     vars.timer = 0;
-//     return true;
-//   }
-// }
 isLoading { return current.Loading1 || current.Loading2 || vars.crash; }
